@@ -48,8 +48,48 @@ function inicializar() {
         }
     }
 
-    atualizarInfo();
+    //atualizarInfo();
     desenhar();
+}
+
+function desenhar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    desenharTabuleiro();
+    desenharDestaques();
+    //desenharPeças();
+}
+
+function desenharTabuleiro() {
+    for (let r = 0; r < tamanho; r++) {
+        for (let c = 0; c < tamanho; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? COR_CASA_CLARA : COR_CASA_ESCURA;
+            ctx.fillRect(c * celula, r * celula, celula, celula);
+        }
+    }
+}
+
+function desenharDestaques() {
+    if (!selecionado) return;
+
+    const { r, c } = selecionado;
+
+    ctx.fillStyle = COR_DESTAQUE;
+    ctx.fillRect(c * celula, r * celula, celula, celula);
+
+    for (const mov of movimentosValidos) {
+        const cor = mov.captura ? COR_CAPTURA : COR_DESTAQUE;
+        ctx.fillStyle = cor;
+        ctx.fillRect(mov.c * celula, mov.r * celula, celula, celula);
+
+        ctx.fillStyle = mov.captura ? 'rgba(220,50,50,0.85)' : '(rgba(0,180,80,0.85)';
+        ctx.beginPath();
+        ctx.arc(
+            mov.c * celula + celula / 2,
+            mov.r * celula + celula / 2,
+            10, 0, Math.PI * 2
+        );
+        ctx.fill();
+    }
 }
 
 inicializar();
