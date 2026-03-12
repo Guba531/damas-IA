@@ -27,23 +27,23 @@ function inicializar() {
 
     for (let r = 0; r < tamanho; r++) {
         tabuleiro[r] = [];
-      for (let c = 0; c < tamanho; c++) {
-        tabuleiro[r][c] = null;
-      }
+        for (let c = 0; c < tamanho; c++) {
+            tabuleiro[r][c] = null;
+        }
     }
 
     for (let r = 0; r < 3; r++) {
-        for(let c = 0; c < tamanho; c++) {
+        for (let c = 0; c < tamanho; c++) {
             if ((r + c) % 2 === 1) {
-                tabuleiro[r][c] = {cor: 'preta', dama: false };
+                tabuleiro[r][c] = { cor: 'preta', dama: false };
             }
         }
     }
 
     for (let r = 5; r < tamanho; r++) {
-        for(let c = 0; c < tamanho; c++) {
+        for (let c = 0; c < tamanho; c++) {
             if ((r + c) % 2 === 1) {
-                tabuleiro[r][c] = {cor: 'branca', dama: false };
+                tabuleiro[r][c] = { cor: 'branca', dama: false };
             }
         }
     }
@@ -56,7 +56,7 @@ function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     desenharTabuleiro();
     desenharDestaques();
-    //desenharPeças();
+    colocarPecas();
 }
 
 function desenharTabuleiro() {
@@ -90,6 +90,74 @@ function desenharDestaques() {
         );
         ctx.fill();
     }
+}
+
+function desenharPeca(r, c, peca) {
+    const cx = c * celula + celula / 2;
+    const cy = r * celula + celula / 2;
+    const raio = celula / 2 - 8;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 4;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, raio, 0, Math.PI * 2);
+    ctx.fillStyle = peca.cor === 'branca' ? COR_PECA_BRANCA : COR_PECA_PRETA;
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = peca.cor === 'branca' ? '#ccc' : '#555';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, raio - 6, 0, Math.PI * 2);
+    ctx.strokeStyle = peca.cor === 'branca' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    if (peca.dama) {
+        desenharCoroa(cx, cy, raio, peca.cor);
+    }
+}
+
+function colocarPecas() {
+    for (let r = 0; r < tamanho; r++) {
+        for (let c = 0; c < tamanho; c++) {
+            const peca = tabuleiro[r][c];
+            if (!peca) continue;
+            desenharPeca(r, c, peca);
+        }
+    }
+}
+
+function desenharCoroa(cx, cy, raio, cor) {
+    const tamanho = raio * 0.55;
+    ctx.fillStyle = COR_DAMA;
+    ctx.strokeStyle = cor === 'branca' ? '#8b6914' : '#e2b96f';
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    const pontos = 5;
+    const anguloBase = Math.PI / pontos;
+
+    ctx.moveTo(cx - tamanho * 0.8, cy + tamanho * 0.3);
+
+    ctx.lineTo(cx - tamanho * 0.8, cy - tamanho * 0.1);
+    ctx.lineTo(cx - tamanho * 0.5, cy - tamanho * 0.5);
+    ctx.lineTo(cx - tamanho * 0.2, cy - tamanho * 0.1);
+    ctx.lineTo(cx, cy - tamanho * 0.65);
+    ctx.lineTo(cx + tamanho * 0.2, cy - tamanho * 0.1);
+    ctx.lineTo(cx + tamanho * 0.5, cy - tamanho * 0.5);
+    ctx.lineTo(cx + tamanho * 0.8, cy - tamanho * 0.1);
+    ctx.lineTo(cx + tamanho * 0.8, cy - tamanho * 0.3);
+    ctx.closePath();
+
+    ctx.fill();
+    ctx.stroke();
 }
 
 inicializar();
