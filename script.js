@@ -160,4 +160,87 @@ function desenharCoroa(cx, cy, raio, cor) {
     ctx.stroke();
 }
 
+function calcularMovimentos(r, c) {
+    const peca = tabuleiro[r][c];
+    if (!peca) return [];
+
+    const movs = [];
+    const direcoes = peca.dama
+    ? [[-1, -1], [-1, 1], [1, -1], [1, 1]]
+    : peca.cor === 'branca'
+    ? [[-1, -1], [-1, 1]]
+    : [[1, -1], [1, 1]];
+
+    for (const [dr, dc] of direcoes) {
+        const nr = r + dr;
+        const nc = c + dc;
+
+        if (!dentro(nr, nc)) continue;
+
+        if (!tabuleiro[nr][nc]) {
+            movs.push({ r: nr, c: nc, captura: false });
+        } else if (tabuleiro[nr][nc].cor !== peca.cor) {
+            const pr = nr + dr;
+            const pc = nc + dc;
+            if (dentro(pr, pc) && !tabuleiro[pr][pc]) {
+                movs.push({ r: pr, c: pc, captura: true, capturaR: nr, capturaC: nc });
+            }
+        }
+    }
+
+    return movs;
+}
+
+function temCaptura(cor) {
+    for (let r = 0; r < tamanho; r++) {
+        for(let c = 0; c < tamanho; c++) {
+            const peca = tabuleiro[r][c];
+            if (!peca || peca.cor !== cor) continue;
+            const movs = calcularMovimentos(r, c);
+            if(movs.some(m => m.captura)) return true;
+        }
+    }
+
+    return false;
+}
+
+function mover(destR, destC) {
+    if (!selecionado) return;
+
+    const { r, c } = selecionado;
+    const mov = movimentosValidos.find(m => m.r === destR && m.c === destC);
+    if (!mov) return;
+
+    tabuleiro[destR][destC] = tabuleiro[r][c];
+    tabuleiro[r][c] = null;
+
+    if (mov.captura) {
+        tabuleiro[mov.capturaR][mov.capturaC] = null;
+    }
+
+    const peca = tabuleiro[destR][destC];
+    if (peca.cor === 'branca' && destR === 0) peca.dama = true;
+    if (peca.cor === 'preta' && destR === 7) peca.dama = true;
+
+    //Verifica captura em cadeia
+    if (mov.captura) {
+        const capturasCadeia = calcularMovimentos(destR, destC).filter(m => m.captura);
+        if(capturasCadeia.length > 0) {
+            //Continua com a mesma peça
+            selecionado = { r: destR, c: destC };
+            movimentosValidos = capturasCadeia;
+            desenhar();
+            return;
+        }
+    }
+
+    selecionado = null;
+    movimentosValidos = [];
+    turno = turno === 'branca' ? 'preta' : 'branca';
+
+    //verificarVitoria();
+    //atualizarInfo();
+    desenhar();
+}
+
 inicializar();
