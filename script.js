@@ -165,13 +165,15 @@ function calcularMovimentos(r, c) {
     if (!peca) return [];
 
     const movs = [];
-    const direcoes = peca.dama
-    ? [[-1, -1], [-1, 1], [1, -1], [1, 1]]
-    : peca.cor === 'branca'
-    ? [[-1, -1], [-1, 1]]
-    : [[1, -1], [1, 1]];
+    const direcoesMovimento = peca.dama
+        ? [[-1, -1], [-1, 1], [1, -1], [1, 1]]
+        : peca.cor === 'branca'
+            ? [[-1, -1], [-1, 1]]
+            : [[1, -1], [1, 1]];
 
-    for (const [dr, dc] of direcoes) {
+    const direcoesCaptura = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    //Movimento Simples
+    for (const [dr, dc] of direcoesMovimento) {
         const nr = r + dr;
         const nc = c + dc;
 
@@ -179,11 +181,67 @@ function calcularMovimentos(r, c) {
 
         if (!tabuleiro[nr][nc]) {
             movs.push({ r: nr, c: nc, captura: false });
-        } else if (tabuleiro[nr][nc].cor !== peca.cor) {
+        }
+    }
+
+    for (const [dr, dc] of direcoesCaptura) {
+        const nr = r + dr;
+        const nc = c + dc;
+
+        if (!dentro(nr, nc)) continue;
+
+        if (tabuleiro[nr][nc] && tabuleiro[nr][nc].cor !== peca.cor) {
             const pr = nr + dr;
             const pc = nc + dc;
+
             if (dentro(pr, pc) && !tabuleiro[pr][pc]) {
-                movs.push({ r: pr, c: pc, captura: true, capturaR: nr, capturaC: nc });
+                movs.push({
+                    r: pr,
+                    c: pc,
+                    captura: true,
+                    capturaR: nr,
+                    capturaC: nc
+                });
+            }
+        }
+    }
+
+    if (peca.dama) {
+        for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+            let nr = r + dr;
+            let nc = c + dc;
+            let inimigoR = null;
+            let inimigoC = null
+            let encontrouInimigo = false;
+
+            while (dentro(nr, nc)) {
+                if (!tabuleiro[nr][nc]) {
+                    if (!encontrouInimigo) {
+                        movs.push({ r: nr, c: nc, captura: false });
+                    } else {
+                        movs.push({
+                            r: nr,
+                            c: nc,
+                            captura: true,
+                            capturaR: inimigoR,
+                            capturaC: inimigoC
+                        });
+                    }
+                } else {
+                    if (tabuleiro[nr][nc].cor === peca.cor) {
+                        break;
+                    }
+                    if (!encontrouInimigo) {
+                        encontrouInimigo = true;
+                        inimigoR = nr;
+                        inimigoC = nc;
+                    } else {
+                        break;
+                    }
+                }
+
+                nr += dr;
+                nc += dc;
             }
         }
     }
@@ -193,11 +251,11 @@ function calcularMovimentos(r, c) {
 
 function temCaptura(cor) {
     for (let r = 0; r < tamanho; r++) {
-        for(let c = 0; c < tamanho; c++) {
+        for (let c = 0; c < tamanho; c++) {
             const peca = tabuleiro[r][c];
             if (!peca || peca.cor !== cor) continue;
             const movs = calcularMovimentos(r, c);
-            if(movs.some(m => m.captura)) return true;
+            if (movs.some(m => m.captura)) return true;
         }
     }
 
@@ -225,7 +283,7 @@ function mover(destR, destC) {
     //Verifica captura em cadeia
     if (mov.captura) {
         const capturasCadeia = calcularMovimentos(destR, destC).filter(m => m.captura);
-        if(capturasCadeia.length > 0) {
+        if (capturasCadeia.length > 0) {
             //Continua com a mesma peça
             selecionado = { r: destR, c: destC };
             movimentosValidos = capturasCadeia;
@@ -238,9 +296,76 @@ function mover(destR, destC) {
     movimentosValidos = [];
     turno = turno === 'branca' ? 'preta' : 'branca';
 
-    //verificarVitoria();
-    //atualizarInfo();
+    verificarVitoria();
+    atualizarInfo();
     desenhar();
 }
 
+function verificarVitoria() {
+    let branca = 0, preta = 0;
+    for (let r = 0; r < tamanho; r++) {
+        for (let c = 0; c < tamanho; r++) {
+            const p = tabuleiro[r][c];
+            if (!p) continue;
+            if (p.cor === 'branca') branca++;
+            else preta++;
+        }
+    }
+
+    if (branca === 0) exibirVitoria('Pretas');
+    else if (preta === 0) exibirVitoria('Brancas');
+}
+
+function exibirVitoria(vencedor) {
+    setTimeout(() => {
+        span.innerHTML = `<strong>🏆 ${vencedor} venceram!</strong>`;
+        alert(`🏆 ${vencedor} venceram! Parabens!`);
+    }, 100);
+}
+
+function atualizarInfo() {
+    const nome = turno === 'branca' ? 'Brancas' : 'Pretas';
+    span.innerHTML = `Vez do: <strong>${nome}</strong>`;
+}
+
+function dentro(r, c) {
+    return r >= 0 && r < tamanho && c >= 0 && c < tamanho;
+}
+
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top
+
+    const c = Math.floor(x / celula);
+    const r = Math.floor(y / celula);
+
+    const peca = tabuleiro[r][c];
+
+    if (selecionado && movimentosValidos.some(m => m.r === r && m.c === c)) {
+        mover(r, c);
+        return;
+    }
+
+    if (peca && peca.cor === turno) {
+        selecionado = { r, c };
+
+        let movs = calcularMovimentos(r, c);
+        if (temCaptura(turno)) {
+            movs = movs.filter(m => m.captura);
+        }
+
+        movimentosValidos = movs;
+        desenhar();
+        return;
+    }
+
+    selecionado = null;
+    movimentosValidos = [];
+    desenhar();
+});
+
+resetBtn.addEventListener('click', inicializar);
+
+//Start
 inicializar();
