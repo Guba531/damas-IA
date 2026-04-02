@@ -5,25 +5,85 @@ const span = document.getElementById('turno');
 
 const tamanho = 8;
 const celula = canvas.width / tamanho;
-// Cores
+
 const COR_CASA_CLARA = '#f0d9b5';
 const COR_CASA_ESCURA = '#b58863';
 const COR_DESTAQUE = 'rgba(0, 200, 100, 0.45)';
 const COR_CAPTURA = 'rgba(220, 50, 50, 0.45)';
 const COR_PECA_BRANCA = '#f5f5f5';
 const COR_PECA_PRETA = '#222222';
-const COR_DAMA = '#e2b96f'; // coroa dourada
+const COR_DAMA = '#e2b96f';
+
+//Estado do Jogo
 
 let tabuleiro = [];
 let turno = 'branca';
 let selecionado = null;
 let movimentosValidos = [];
 
+//Configurações do Modal
+let corJogador = 'branca';
+let nivelIA = 1;
+let corIA = 'preta';
+
+let pontosJogador = 0;
+let pontosIA = 0;
+
+// Flag
+let aguardandoIA = false;
+
+const pontosBrancoEl = document.getElementById("pontosBranco");
+const pontosPretoEl = document.getElementById("pontosPreto");
+
+let pontosBranco = 0;
+let pontosPreto = 0;
+
+//Modal
+const modal = document.getElementById("modalEscolha");
+const botoesCor = document.querySelectorAll('.btn-cor');
+const btnIniciarJogo = document.getElementById('btn-iniciar-jogo');
+const botoesNivel = document.querySelectorAll('.btn-nivel');
+
+let jogadorCor = null;
+let jogoIniciado = false;
+
+botoesCor.forEach(btn => {
+    btn.addEventListener('click', () => {
+        botoesCor.forEach(b => b.classList.remove('selecionado'));
+        btn.classList.add('selecionado');
+        corJogador = btn.dataset.cor;
+    });
+});
+
+botoesNivel.forEach(btn => {
+    btn.addEventListener('click', () => {
+        botoesNivel.forEach(b => b.classList.remove('selecionado'));
+        btn.classList.add('selecionado');
+        nivelIA = parseInt(btn.dataset.nivel);
+    });
+});
+
+btnIniciarJogo.addEventListener('click', () => {
+    corIA = corJogador === 'branca' ? 'preta' : 'branca';
+    modal.classList.add('oculto');
+    inicializar();
+});
+
+resetBtn.addEventListener('click', () => {
+    modal.classList.remove('oculto');
+});
+// Fim do Modal
+
 function inicializar() {
     tabuleiro = [];
     turno = 'branca';
     selecionado = null;
     movimentosValidos = [];
+    aguardandoIA = false;
+
+    pontosBranco = 0;
+    pontosPreto = 0;
+    atualizarPlacar();
 
     for (let r = 0; r < tamanho; r++) {
         tabuleiro[r] = [];
@@ -48,10 +108,14 @@ function inicializar() {
         }
     }
 
-    //atualizarInfo();
+    atualizarInfo();
     desenhar();
+
+    //Se a IA jogar primeiro (jogador escolheu pretas), dispara IA
+    if (turno === corIA) agendarIA();
 }
 
+//-------Desenho-------------
 function desenhar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     desenharTabuleiro();
@@ -141,9 +205,6 @@ function desenharCoroa(cx, cy, raio, cor) {
     ctx.lineWidth = 1.5;
 
     ctx.beginPath();
-    const pontos = 5;
-    const anguloBase = Math.PI / pontos;
-
     ctx.moveTo(cx - tamanho * 0.8, cy + tamanho * 0.3);
 
     ctx.lineTo(cx - tamanho * 0.8, cy - tamanho * 0.1);
@@ -160,7 +221,9 @@ function desenharCoroa(cx, cy, raio, cor) {
     ctx.stroke();
 }
 
-function calcularMovimentos(r, c) {
+//Logica de movimentos
+function calcularMovimentos(r, c, tab) {
+    tab = tab || tabuleiro;
     const peca = tabuleiro[r][c];
     if (!peca) return [];
 
@@ -172,80 +235,27 @@ function calcularMovimentos(r, c) {
             : [[1, -1], [1, 1]];
 
     const direcoesCaptura = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-    //Movimento Simples
-    for (const [dr, dc] of direcoesMovimento) {
-        const nr = r + dr;
-        const nc = c + dc;
 
-        if (!dentro(nr, nc)) continue;
-
-        if (!tabuleiro[nr][nc]) {
-            movs.push({ r: nr, c: nc, captura: false });
-        }
-    }
-
-    for (const [dr, dc] of direcoesCaptura) {
-        const nr = r + dr;
-        const nc = c + dc;
-
-        if (!dentro(nr, nc)) continue;
-
-        if (tabuleiro[nr][nc] && tabuleiro[nr][nc].cor !== peca.cor) {
-            const pr = nr + dr;
-            const pc = nc + dc;
-
-            if (dentro(pr, pc) && !tabuleiro[pr][pc]) {
-                movs.push({
-                    r: pr,
-                    c: pc,
-                    captura: true,
-                    capturaR: nr,
-                    capturaC: nc
-                });
+    if(!peca.dama) {
+        for (const [dr, dc] of direcoesMovimento) {
+            const nr = r + dr, nc = c + dc;
+            if (dentro(nr, nc) && !tab[nr][nc]) {
+                movs.push({r: nr, c: nc, captura: false});
             }
         }
-    }
-
-    if (peca.dama) {
-        for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
-            let nr = r + dr;
-            let nc = c + dc;
-            let inimigoR = null;
-            let inimigoC = null
-            let encontrouInimigo = false;
-
-            while (dentro(nr, nc)) {
-                if (!tabuleiro[nr][nc]) {
-                    if (!encontrouInimigo) {
-                        movs.push({ r: nr, c: nc, captura: false });
-                    } else {
-                        movs.push({
-                            r: nr,
-                            c: nc,
-                            captura: true,
-                            capturaR: inimigoR,
-                            capturaC: inimigoC
-                        });
-                    }
-                } else {
-                    if (tabuleiro[nr][nc].cor === peca.cor) {
-                        break;
-                    }
-                    if (!encontrouInimigo) {
-                        encontrouInimigo = true;
-                        inimigoR = nr;
-                        inimigoC = nc;
-                    } else {
-                        break;
-                    }
+        for (const [dr, dc] of direcoesCaptura) {
+            const nr = r + dr, nc = c + dc;
+            if (!dentro(nr, nc)) continue;
+            if(tab[nr][nc] && tab[nr][nc].cor !== peca.cor) {
+                const pr = nr + dr, pc = nc + dc;
+                if (dentro(pr, pc) && !tab[pr][pc]) {
+                    movs.push({ r: pr, c: pc, captura: true, capturaR: nr, capturaC: nc });
                 }
-
-                nr += dr;
-                nc += dc;
             }
         }
+    } else {
+        
     }
-
     return movs;
 }
 
@@ -258,7 +268,6 @@ function temCaptura(cor) {
             if (movs.some(m => m.captura)) return true;
         }
     }
-
     return false;
 }
 
@@ -273,6 +282,15 @@ function mover(destR, destC) {
     tabuleiro[r][c] = null;
 
     if (mov.captura) {
+        const pecaCapturada = tabuleiro[mov.capturaR][mov.capturaC];
+
+        if (pecaCapturada.cor === 'branca') {
+            pontosPreto++;
+        } else {
+            pontosBranco++;
+        }
+
+        atualizarPlacar();
         tabuleiro[mov.capturaR][mov.capturaC] = null;
     }
 
@@ -280,11 +298,9 @@ function mover(destR, destC) {
     if (peca.cor === 'branca' && destR === 0) peca.dama = true;
     if (peca.cor === 'preta' && destR === 7) peca.dama = true;
 
-    //Verifica captura em cadeia
     if (mov.captura) {
         const capturasCadeia = calcularMovimentos(destR, destC).filter(m => m.captura);
         if (capturasCadeia.length > 0) {
-            //Continua com a mesma peça
             selecionado = { r: destR, c: destC };
             movimentosValidos = capturasCadeia;
             desenhar();
@@ -304,7 +320,7 @@ function mover(destR, destC) {
 function verificarVitoria() {
     let branca = 0, preta = 0;
     for (let r = 0; r < tamanho; r++) {
-        for (let c = 0; c < tamanho; r++) {
+        for (let c = 0; c < tamanho; c++) {
             const p = tabuleiro[r][c];
             if (!p) continue;
             if (p.cor === 'branca') branca++;
@@ -328,14 +344,21 @@ function atualizarInfo() {
     span.innerHTML = `Vez do: <strong>${nome}</strong>`;
 }
 
+function atualizarPlacar() {
+    pontosBrancoEl.textContent = pontosBranco;
+    pontosPretoEl.textContent = pontosPreto;
+}
+
 function dentro(r, c) {
     return r >= 0 && r < tamanho && c >= 0 && c < tamanho;
 }
 
 canvas.addEventListener('click', (e) => {
+    if (!jogoIniciado) return;
+
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top
+    const y = e.clientY - rect.top;
 
     const c = Math.floor(x / celula);
     const r = Math.floor(y / celula);
@@ -367,5 +390,4 @@ canvas.addEventListener('click', (e) => {
 
 resetBtn.addEventListener('click', inicializar);
 
-//Start
 inicializar();

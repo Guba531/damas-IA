@@ -34,6 +34,44 @@ h1 {
     color: #e2b96f;
 }
 
+#placar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 14px;
+    background: #0f3460;
+    border: 2px solid #e2b96f44;
+    border-radius: 10px;
+    padding: 10px 32px;
+}
+
+.placar-lado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+}
+
+.placar-label {
+    font-size: 0.85rem;
+    color: #aaa;
+    letter-spacing: 1px;
+}
+
+.placar-pts {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #e2b96f;
+    line-height: 1.2;
+}
+
+.placar-vs {
+    font-size: 1rem;
+    color: #555;
+    font-weight: bold;
+}
+/*Fim do Placar*/
+
 #reiniciar {
     background: #e2b96f;
     border: none;
@@ -43,7 +81,6 @@ h1 {
     font-size: 0.95rem;
     font-weight: bold;
     color: #1a1a2e;
-    transition: background 0.2s;
 }
 
 #reiniciar:hover {
@@ -54,4 +91,80 @@ canvas {
     border: 4px solid #e2b96f;
     border-radius: 4px;
     cursor: pointer;
+}
+
+/* MODAL */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-conteudo {
+    background: white;
+    color: black;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.modal button {
+    margin: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.opcoes-nivel {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-nivel {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px solid #444;
+    background: #0f3460;
+    color: #eee;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-nivel.selecionado {
+    border-color: #e2b96f;
+    background: #1a3a6e;
+    color: #e2b96f;
+    font-weight: bold;
+}
+
+.btn-nivel:hover {
+    filter: brightness(1.2);
+}
+
+/*Seleciona apenas um elemento HTML único que possua o atributo id="nomedaclasse".
+Uso: Deve ser usado para elementos únicos, como a estrutura principal de um layout
+(ex: #header, #footer) ou para MANIPULAÇÃO ESPECÍFICA COM JavaScript.*/
+#btn-iniciar-jogo {
+    background: #e2b96f;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor : pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #1a1a2e;
+    transition: background 0.2s;
+    margin-top: 4px
+}
+
+#btn-iniciar-jogo:hover {
+    background: #c9993e;
 }

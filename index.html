@@ -9,13 +9,52 @@
 
 <body>
     <h1>Jogo de Damas</h1>
+
+    <!-- MODAL -->
+    <div id="modalEscolha" class="modal">
+        <div class="modal-conteudo">
+            <h2>Escolha sua cor</h2>
+
+            <div>
+                <button class="btn-cor selecionado" data-cor="branca">⚪ Brancas</button>
+                <button class="btn-cor" data-cor="preta">⚫ Pretas</button>
+            </div>
+
+            <h2>🤖 Nivel da IA:</h2>
+            <div class="opcoes-nivel">
+                <button class="btn-nivel selecionado" data-nivel="1">🟢 Facil</button>
+                <button class="btn-nivel" data-nivel="2">🟡 Medio</button>
+                <button class="btn-nivel" data-nivel="3">🔴 Dificil</button>
+            </div>
+
+            <button id="btn-iniciar-jogo">▶ Iniciar Jogo</button>
+        </div>
+    </div>
+    <!--Fim Modal-->
+
+    <div id="placar">
+        <div class="placar-lado">
+            <span class="placar-label">🧑‍🦲 Jogador</span>
+            <span class="placar-pts" id="pts-jogador">0</span>
+        </div>
+        <div class="placar-vs">VS</div>
+        <div class="placar-lado">
+            <span class="placar-label">🤖 IA</span>
+            <span class="placar-pts" id="pts-ia">0</span>
+        </div>
+    </div>
+
+    <!--Fim do Placar-->
+
     <div id="info">
         <span id="turno">
             Vez da:
             <strong>Branca</strong>
         </span>
+
         <button id="reiniciar">Reiniciar</button>
     </div>
+
     <div class="prancheta-container">
         <canvas id="myCanvas" width="560" height="560"></canvas>
     </div>
