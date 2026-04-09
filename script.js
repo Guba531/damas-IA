@@ -236,17 +236,17 @@ function calcularMovimentos(r, c, tab) {
 
     const direcoesCaptura = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
 
-    if(!peca.dama) {
+    if (!peca.dama) {
         for (const [dr, dc] of direcoesMovimento) {
             const nr = r + dr, nc = c + dc;
             if (dentro(nr, nc) && !tab[nr][nc]) {
-                movs.push({r: nr, c: nc, captura: false});
+                movs.push({ r: nr, c: nc, captura: false });
             }
         }
         for (const [dr, dc] of direcoesCaptura) {
             const nr = r + dr, nc = c + dc;
             if (!dentro(nr, nc)) continue;
-            if(tab[nr][nc] && tab[nr][nc].cor !== peca.cor) {
+            if (tab[nr][nc] && tab[nr][nc].cor !== peca.cor) {
                 const pr = nr + dr, pc = nc + dc;
                 if (dentro(pr, pc) && !tab[pr][pc]) {
                     movs.push({ r: pr, c: pc, captura: true, capturaR: nr, capturaC: nc });
@@ -254,18 +254,39 @@ function calcularMovimentos(r, c, tab) {
             }
         }
     } else {
-        
+        //Dama: movimentos em raio livre
+        for (const [dr, dc] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+            let nr = r + dr, nc = c + dc;
+            let inimigoR = null, inimigoC = null, encontrouInimigo = false;
+
+            while (dentro(nr, nc)) {
+                if (!tab[nr][nc]) {
+                    if (!encontrouInimigo) {
+                        movs.push({ r: nr, c: nc, captura: false });
+                    } else {
+                        movs.push({ r: nr, c: nc, captura: true, capturaR: inimigoR, capturaC: inimigoC });
+                    }
+                } else {
+                    if (tab[nr][nc].cor === peca.cor) break;
+                    if (!encontrouInimigo) {
+                        encontrouInimigo = true;
+                        inimigoR = nr; inimigoC = nc;
+                    } else break;
+                }
+                nr += dr; nc += dc;
+            }
+        }
     }
     return movs;
 }
 
-function temCaptura(cor) {
+function temCaptura(cor, tab) {
+    tab = tab || tabuleiro;
     for (let r = 0; r < tamanho; r++) {
         for (let c = 0; c < tamanho; c++) {
-            const peca = tabuleiro[r][c];
+            const peca = tab[r][c];
             if (!peca || peca.cor !== cor) continue;
-            const movs = calcularMovimentos(r, c);
-            if (movs.some(m => m.captura)) return true;
+            if (calcularMovimentos(r, c, tab).some(m => m.captura)) return true;
         }
     }
     return false;
@@ -278,25 +299,7 @@ function mover(destR, destC) {
     const mov = movimentosValidos.find(m => m.r === destR && m.c === destC);
     if (!mov) return;
 
-    tabuleiro[destR][destC] = tabuleiro[r][c];
-    tabuleiro[r][c] = null;
-
-    if (mov.captura) {
-        const pecaCapturada = tabuleiro[mov.capturaR][mov.capturaC];
-
-        if (pecaCapturada.cor === 'branca') {
-            pontosPreto++;
-        } else {
-            pontosBranco++;
-        }
-
-        atualizarPlacar();
-        tabuleiro[mov.capturaR][mov.capturaC] = null;
-    }
-
-    const peca = tabuleiro[destR][destC];
-    if (peca.cor === 'branca' && destR === 0) peca.dama = true;
-    if (peca.cor === 'preta' && destR === 7) peca.dama = true;
+    aplicarMovimento(tabuleiro, r, c, mov);
 
     if (mov.captura) {
         const capturasCadeia = calcularMovimentos(destR, destC).filter(m => m.captura);
@@ -312,9 +315,24 @@ function mover(destR, destC) {
     movimentosValidos = [];
     turno = turno === 'branca' ? 'preta' : 'branca';
 
-    verificarVitoria();
+    if (verificarVitoria()) return;
+
     atualizarInfo();
     desenhar();
+
+    //Vez da IA jogar
+    if (turno === corIA) agendarIA();
+}
+
+function aplicarMovimento(tab, r, c, mov) {
+    tab[mov.r][mov.c] = tab[r][c];
+    tab[r][c] = null;
+
+    if (mov.captura) tab[mov.capturaR][mov.capturaC] = null;
+
+    const peca = tab[mov.r][mov.c];
+    if (peca.cor === 'branca' && mov.r === 0) peca.dama = true;
+    if (peca.cor === 'preta' && mov.r === 7) peca.dama = true;
 }
 
 function verificarVitoria() {
@@ -328,8 +346,34 @@ function verificarVitoria() {
         }
     }
 
-    if (branca === 0) exibirVitoria('Pretas');
-    else if (preta === 0) exibirVitoria('Brancas');
+    const semMovimentos = !temMovimentosDisponiveis(turno);
+
+    if (branca === 0 || (turno === 'branca' && semMovimentos)) {
+        //atualiza placar
+        if (corIA === 'preta') {
+            registrarPonto('ia');
+        } else {
+            registrarPonto('jogador');
+        }
+        exibirVitoria('Pretas');
+        return true;
+    }
+
+    if (preta === 0 || (turno === 'preta' && semMovimentos)) {
+        if (corIA === 'branca') {
+            registrarPonto('ia');
+        } else {
+            registrarPonto('jogador');
+        }
+        exibirVitoria('Brancas');
+        return true;
+    }
+
+    return false;
+}
+
+function temMovimentosDisponiveis(cor) {
+    //COMEÇAR AQUI SEGUNDA-FEIRA!!!
 }
 
 function exibirVitoria(vencedor) {
