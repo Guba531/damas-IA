@@ -373,24 +373,83 @@ function verificarVitoria() {
 }
 
 function temMovimentosDisponiveis(cor) {
-    //COMEÇAR AQUI SEGUNDA-FEIRA!!!
+    for (let r = 0; r < tamanho; r++) {
+        for (let c = 0; c < tamanho; c++) {
+            const peca = tabuleiro[r][c];
+            if (!peca || peca.cor !== cor) continue;
+            if (calcularMovimentos(r, c).length > 0) return true;
+        }
+    }
+
+    return false;
 }
 
 function exibirVitoria(vencedor) {
+    desenhar();
+    const foiJogador = (vencedor === 'Brancas' && corJogador === 'branca') ||
+        (vencedor === 'Pretas' && corJogador === 'preta');
+    const msg = foiJogador ? '🏆 Voce venceu! Parabens!' : '🤖 A IA venceu! Tente novamente.';
     setTimeout(() => {
-        span.innerHTML = `<strong>🏆 ${vencedor} venceram!</strong>`;
-        alert(`🏆 ${vencedor} venceram! Parabens!`);
+        turno.innerHTML = `<strong>${msg}</strong>`;
+        alert(`${msg}`);
     }, 100);
 }
 
-function atualizarInfo() {
-    const nome = turno === 'branca' ? 'Brancas' : 'Pretas';
-    span.innerHTML = `Vez do: <strong>${nome}</strong>`;
+function registrarPonto(quem) {
+    if (quem === 'jogador') {
+        pontosJogador++;
+        document.getElementById('pts-jogador').textContent = pontosJogador;
+    } else {
+        pontosIA++;
+        document.getElementById('pts-ia').textContent = pontosIA;
+    }
 }
 
-function atualizarPlacar() {
-    pontosBrancoEl.textContent = pontosBranco;
-    pontosPretoEl.textContent = pontosPreto;
+function atualizarInfo() {
+    const eVezDoJogador = turno === corJogador;
+    const nome = eVezDoJogador ? '🧑‍🦲 Você' : '🤖 IA';
+    turno.innerHTML = `Vez: <strong>${nome}</strong>`;
+}
+
+function dentro(r, c) {
+    return r >= 0 && r < tamanho && c >= 0 && c < tamanho;
+}
+
+function agendarIA() {
+    aguardandoIA = true;
+    desenhar();
+    const delay = nivelIA === 1 ? 500 : nivelIA === 2 ? 700 : 1000;
+    setTimeout(() => {
+        executarJogadaIA();
+        aguardandoIA = false;
+    }, delay);
+}
+
+//Executa a jogada retornada pelo modula de IA (ia.js)
+function executarJogadaIA() {
+    const jogada = calcularJogadaIA(tabuleiro, corIA, nivelIA, calcularMovimentos, temCaptura, aplicarMovimento, dentro, tamanho);
+    if (!jogada) return;
+
+    let { r, c, mov } = jogada;
+    aplicarMovimento(tabuleiro, r, c, mov);
+
+    //Captura em cadeia da IA
+
+    // Enquanto ainda for possível fazer uma captura (comer outra peça)
+    //Enquanto der pra continuar comendo → continua
+    //Se não der mais → para
+    while (mov.captura) {
+        const proxCapt = calcularMovimentos(mov.r, mov.c).filter(m => m.captura);
+        if (proxCapt.length === 0) break;
+        const proximo = proxCapt[Math.floor(Math.random() * proxCapt.length)];
+        aplicarMovimento(tabuleiro, mov.r, mov.c, proximo);
+        mov = proximo;
+    }
+
+    turno = turno === 'branca' ? 'preta' : 'branca';
+    if (verificarVitoria()) return;
+    atualizarInfo();
+    desenhar();
 }
 
 function dentro(r, c) {
