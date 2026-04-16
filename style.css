@@ -107,6 +107,10 @@ canvas {
     justify-content: center;
 }
 
+.modal.oculto {
+    display: none;
+}
+
 .modal-conteudo {
     background: white;
     color: black;

@@ -32,12 +32,6 @@ let pontosIA = 0;
 // Flag
 let aguardandoIA = false;
 
-const pontosBrancoEl = document.getElementById("pontosBranco");
-const pontosPretoEl = document.getElementById("pontosPreto");
-
-let pontosBranco = 0;
-let pontosPreto = 0;
-
 //Modal
 const modal = document.getElementById("modalEscolha");
 const botoesCor = document.querySelectorAll('.btn-cor');
@@ -72,6 +66,7 @@ btnIniciarJogo.addEventListener('click', () => {
 resetBtn.addEventListener('click', () => {
     modal.classList.remove('oculto');
 });
+
 // Fim do Modal
 
 function inicializar() {
@@ -80,10 +75,6 @@ function inicializar() {
     selecionado = null;
     movimentosValidos = [];
     aguardandoIA = false;
-
-    pontosBranco = 0;
-    pontosPreto = 0;
-    atualizarPlacar();
 
     for (let r = 0; r < tamanho; r++) {
         tabuleiro[r] = [];
@@ -452,20 +443,14 @@ function executarJogadaIA() {
     desenhar();
 }
 
-function dentro(r, c) {
-    return r >= 0 && r < tamanho && c >= 0 && c < tamanho;
-}
-
 canvas.addEventListener('click', (e) => {
-    if (!jogoIniciado) return;
+    if (aguardandoIA || turno !== corJogador) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
     const c = Math.floor(x / celula);
     const r = Math.floor(y / celula);
-
     const peca = tabuleiro[r][c];
 
     if (selecionado && movimentosValidos.some(m => m.r === r && m.c === c)) {
@@ -475,12 +460,8 @@ canvas.addEventListener('click', (e) => {
 
     if (peca && peca.cor === turno) {
         selecionado = { r, c };
-
         let movs = calcularMovimentos(r, c);
-        if (temCaptura(turno)) {
-            movs = movs.filter(m => m.captura);
-        }
-
+        if (temCaptura(turno)) movs = movs.filter(m => m.captura);
         movimentosValidos = movs;
         desenhar();
         return;
@@ -490,7 +471,3 @@ canvas.addEventListener('click', (e) => {
     movimentosValidos = [];
     desenhar();
 });
-
-resetBtn.addEventListener('click', inicializar);
-
-inicializar();
