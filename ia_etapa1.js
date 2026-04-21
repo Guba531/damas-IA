@@ -20,7 +20,7 @@ function calcularJogadaIA(tabuleiro, corIA, nivel, calcularMovimentos, temCaptur
             const peca = tabuleiro[r][c];
             if (!peca || peca.cor !== corIA) continue;
 
-            const movimentos = calcularMovimentos(r, c, tabuleiro);
+            const movimentos = calcMov(r, c, tabuleiro);
 
             for (const mov of movimentos) {
                 opcoes.push({ r, c, mov});
