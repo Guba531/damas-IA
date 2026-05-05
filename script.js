@@ -190,26 +190,54 @@ function colocarPecas() {
 }
 
 function desenharCoroa(cx, cy, raio, cor) {
-    const tamanho = raio * 0.55;
-    ctx.fillStyle = COR_DAMA;
-    ctx.strokeStyle = cor === 'branca' ? '#8b6914' : '#e2b96f';
-    ctx.lineWidth = 1.5;
+  const t = raio * 0.5;
 
-    ctx.beginPath();
-    ctx.moveTo(cx - tamanho * 0.8, cy + tamanho * 0.3);
+  const baseY = cy + t * 0.25;
+  const topoY = cy - t * 0.45;
 
-    ctx.lineTo(cx - tamanho * 0.8, cy - tamanho * 0.1);
-    ctx.lineTo(cx - tamanho * 0.5, cy - tamanho * 0.5);
-    ctx.lineTo(cx - tamanho * 0.2, cy - tamanho * 0.1);
-    ctx.lineTo(cx, cy - tamanho * 0.65);
-    ctx.lineTo(cx + tamanho * 0.2, cy - tamanho * 0.1);
-    ctx.lineTo(cx + tamanho * 0.5, cy - tamanho * 0.5);
-    ctx.lineTo(cx + tamanho * 0.8, cy - tamanho * 0.1);
-    ctx.lineTo(cx + tamanho * 0.8, cy - tamanho * 0.3);
-    ctx.closePath();
+  ctx.fillStyle = COR_DAMA;
+  ctx.strokeStyle = cor === 'branca' ? '#8b6914' : '#e2b96f';
+  ctx.lineWidth = 1.5;
 
-    ctx.fill();
-    ctx.stroke();
+  // sombra leve (igual à peça)
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = 3;
+  ctx.shadowOffsetY = 1;
+
+  ctx.beginPath();
+
+  // base esquerda
+  ctx.moveTo(cx - t * 0.8, baseY);
+
+  // subida lateral
+  ctx.lineTo(cx - t * 0.8, cy - t * 0.1);
+
+  // pico esquerdo
+  ctx.lineTo(cx - t * 0.4, topoY);
+
+  // vale
+  ctx.lineTo(cx - t * 0.15, cy - t * 0.05);
+
+  // pico central (menos exagerado agora)
+  ctx.lineTo(cx, topoY - t * 0.1);
+
+  // vale
+  ctx.lineTo(cx + t * 0.15, cy - t * 0.05);
+
+  // pico direito
+  ctx.lineTo(cx + t * 0.4, topoY);
+
+  // descida lateral
+  ctx.lineTo(cx + t * 0.8, cy - t * 0.1);
+
+  // base direita
+  ctx.lineTo(cx + t * 0.8, baseY);
+
+  ctx.closePath();
+  ctx.fill();
+
+  // remove sombra
+  ctx.shadowColor = 'transparent';
 }
 
 //Logica de movimentos
