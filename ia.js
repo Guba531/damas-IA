@@ -66,7 +66,7 @@ function corAdversaria(cor) {
 function promoverSeDama(peca, r) {
     if (!peca.dama) {
         peca.dama = (peca.cor === 'branca' && r === 0) ||
-                    (peca.cor === 'preta'  && r === 7);
+            (peca.cor === 'preta' && r === 7);
     }
 }
 
@@ -82,7 +82,6 @@ function simularMov(tab, { r, c, mov }) {
 
 function iaNivel1(tabuleiro, corIA, calcMov, temCapt, TAMANHO) {
     const corAdversario = corAdversaria(corIA);
-
     const opcoes = todosMovimentos(tabuleiro, corIA, calcMov, temCapt, TAMANHO);
 
     if (opcoes.length === 0) return null;
@@ -113,4 +112,165 @@ function iaNivel1(tabuleiro, corIA, calcMov, temCapt, TAMANHO) {
     const maiorScore = opcoes[0].score;
     const melhores = opcoes.filter(o => o.score === maiorScore);
     return melhores[Math.floor(Math.random() * melhores.length)];
+}
+
+function ficaVulneravel(tab, r, c, corAdversario, calcMov, TAMANHO) {
+    for (let ar = 0; ar < TAMANHO; ar++) {
+        for (let ac = 0; ac < TAMANHO; ac++) {
+            const p = tab[ar][ac];
+            if (!p || p.cor !== corAdversario) continue;
+            const movAdv = calcMov(ar, ac, tab);
+            if (movAdv.some(m => m.captura && m.capturaR === r && m.capturaC === c)) return true;
+        }
+    }
+    return false;
+}
+
+//-------IA Nivel 2: MEDIO------------------------------------
+
+function avaliarTabuleiro(tab, corIA) {
+    let score = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = tab[r][c];
+            if (!p) continue;
+            const valor = p.dama ? 3 : 1;
+            const avanco = p.cor === 'preta' ? r / 7 : (7 - r) / 7;
+            if (p.cor === corIA) score += valor + avanco * 0.3;
+            else score -= valor + avanco * 0.3;
+        }
+    }
+    return score;
+}
+
+function iaNivel2(tabuleiro, corIA, calcMov, temCapt, TAMANHO) {
+    const opcoes = todosMovimentos(tabuleiro, corIA, calcMov, temCapt, TAMANHO);
+
+    if (opcoes.length === 0) return null;
+
+    let melhorScore = -Infinity;
+    let melhorOpcao = null;
+
+    for (const opcao of opcoes) {
+        const copia = simularMov(tabuleiro, opcao);
+        const score = avaliarTabuleiro(copia, corIA) + Math.random() * 0.5;
+
+        if (score > melhorScore) {
+            melhorScore = score;
+            melhorOpcao = opcao;
+        }
+    }
+
+    return melhorOpcao;
+}
+
+//-----------IA Nivel 3: Dificil-------------------------------------------
+
+function iaNivel3(tabuleiro, corIA, calcMov, temCapt, TAMANHO) {
+    const opcoes = todosMovimentos(tabuleiro, corIA, calcMov, temCapt, TAMANHO);
+    if (opcoes.length === 0) return null;
+
+    let melhorValor = -Infinity;
+    let melhorOpcao = null;
+
+    for (const opcao of opcoes) {
+        const copia = simularMov(tabuleiro, opcao);
+        aplicarMovSimples(copia, opcao.r, opcao.c, opcao.mov);
+
+        const val = minimax(copia, PROFUNDIDADE_MAX - 1, -Infinity, Infinity, false, corIA, calcMov, temCapt, TAMANHO);
+
+        if (val > melhorValor) {
+            melhorValor = val;
+            melhorOpcao = opcao;
+        }
+    }
+
+    return melhorOpcao;
+}
+
+/**
+ * Minimax com poda Alpha-Beta.
+ *
+ * @param {Array}   tab          - Tabuleiro atual (já clonado)
+ * @param {number}  profundidade - Níveis restantes a explorar
+ * @param {number}  alpha        - Melhor valor que MAX já garantiu neste caminho
+ * @param {number}  beta         - Melhor valor que MIN já garantiu neste caminho
+ * @param {boolean} maximizando  - true = turno da IA (MAX) | false = adversário (MIN)
+ * @param {string}  corIA        - Cor da IA (referência fixa durante toda a busca)
+ */
+
+function minimax(tab, profundidade, alpha, beta, maximizando, corIA, calcMov, temCapt, TAMANHO) {
+    const corAdv = corAdversaria(corIA);
+
+    // Caso base: atingiu a profundidade limite — avalia o tabuleiro resultante
+    if (profundidade === 0) {
+        return avaliarTabuleiro(tab, corIA);
+    }
+
+    const corAtual = maximizando ? corIA : corAdv;
+    const opcoes = todosMovimentos(tab, corAtual, calcMov, temCapt, TAMANHO);
+
+    // Sem movimentos disponíveis = derrota para quem deveria jogar agora
+    if (opcoes.length === 0) {
+        return maximizando ? -1000 : 1000;
+    }
+
+    if (maximizando) {
+        let maxVal = -Infinity;
+        for (const opcao of opcoes) {
+            const copia = simularMov(tab, opcao);
+            const val = minimax(copia, profundidade - 1, alpha, beta, false, corIA, calcMov, temCapt, TAMANHO);
+            maxVal = Math.max(maxVal, val);
+            alpha = Math.max(alpha, val);
+            if (beta <= alpha) break; // poda beta: adversário nunca escolheria
+        }
+        return maxVal;
+        
+
+    } else {
+        let minVal = Infinity;
+        for (const opcao of opcoes) {
+            const copia = simularMov(tab, opcao);
+            const val = minimax(copia, profundidade - 1, alpha, beta, true, corIA, calcMov, temCapt, TAMANHO);
+            minVal = Math.min(minVal, val);
+            beta   = Math.min(beta, val);
+            if (beta <= alpha) break; // poda beta: adversário nunca escolheria
+        }
+        return minVal;
+        
+    }
+}
+
+/**
+ * Avaliação completa do tabuleiro para o Minimax (IA 3).
+ * Evolução de avaliarTabuleiro(): acrescenta controle do centro,
+ * proteção de borda e bônus por vantagem numérica acentuada.
+ * Dama vale 5 (vs 3 na IA 2) pois o Minimax enxerga consequências a longo prazo.
+ */
+
+function avaliarTabuleiroCompleto(tab, corIA) {
+    let score = 0;
+    let pecasIA = 0, pecasAdv = 0;
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = tab[r][c];
+            if (!p) continue;
+
+            const base = p.dama ? 5 : 1;
+            const avanco = p.cor === 'preta' ? r / 7 : (7 - r) / 7;
+            const centro = (r >= 2 && r <= 5 && c >= 2 && c <= 5) ? 0.3 : 0;
+            const borda = (c === 0 || c === 7) ? 0.1 : 0;
+
+            const valor = base + avanco * 0.4 + centro + borda
+
+            if (p.cor === corIA) { score += valor; pecasIA++; }
+            else { score -= valor; pecasAdv++; }
+        }
+    }
+
+    if (pecasIA > pecasAdv + 3) score += 2;
+    if (pecasAdv > pecasIA + 3) score -= 2;
+
+    return score;
 }
